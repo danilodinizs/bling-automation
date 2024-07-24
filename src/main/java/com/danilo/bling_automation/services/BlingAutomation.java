@@ -28,156 +28,257 @@ public class BlingAutomation {
     }
 
     public void createProduct(Map<String, String> productData) {
-        System.out.println("Clonando produto...");
-        cloneProduct(productData.get("type"), productData.get("bath"));
-
-        System.out.println("Preenchendo detalhes do produto...");
-        fillProductDetails(productData);
-
-        System.out.println("Carregando imagem...");
+        startProductCreation();
+        fillBasicDetails(productData);
+        fillCharacteristics();
+        fillShortDescription(productData);
+        fillComplementaryDescription(productData.get("description"));
+        fillCategory(productData.get("category"), productData);
         uploadImage(productData.get("sku"));
-
-        System.out.println("Preenchendo detalhes do estoque...");
         fillStockDetails(productData);
-
-        System.out.println("Salvando produto...");
-        saveProduct();
+        fillTaxDetails();
+        //saveProduct();
     }
 
-    private void cloneProduct(String type, String bath) {
+    private void startProductCreation() {
         try {
-            // Clique no botão de dropdown usando JavaScript
-            String dropdownButtonXpath = "//button[@data-toggle='dropdown' and contains(@class, 'dropdown-toggle')]";
-            System.out.println("Procurando o botão de dropdown com XPath: " + dropdownButtonXpath);
-            WebElement dropdownButton = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(dropdownButtonXpath)));
-            scrollToElement(dropdownButton);
-            clickUsingJavaScript(dropdownButton);
+            // Clicar no botão "Incluir cadastro"
+            WebElement incluirCadastroButton = waitAndFindElement(By.id("btn-incluir"));
+            scrollToElement(incluirCadastroButton);
+            clickUsingJavaScript(incluirCadastroButton);
 
-            // Clique na opção "Clonar produto" usando JavaScript
-            String cloneProductOptionXpath = "//li/a/span[text()='Clonar produto']";
-            System.out.println("Procurando a opção 'Clonar produto' com XPath: " + cloneProductOptionXpath);
-            WebElement cloneProductOption = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cloneProductOptionXpath)));
-            scrollToElement(cloneProductOption);
-            clickUsingJavaScript(cloneProductOption);
+            // Clicar no botão "Pular para versão completa"
+            WebElement versaoCompletaButton = waitAndFindElement(By.id("novo_produto_pular"));
+            scrollToElement(versaoCompletaButton);
+            clickUsingJavaScript(versaoCompletaButton);
         } catch (Exception e) {
-            System.out.println("Erro ao clonar produto: " + e.getMessage());
+            System.out.println("Erro ao iniciar a criação do produto: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private void fillProductDetails(Map<String, String> productData) {
-        WebElement skuField = waitAndFindElement(By.id("codigo"));
-        clearAndSendKeys(skuField, productData.get("sku"));
+    private void fillBasicDetails(Map<String, String> productData) {
+        try {
+            WebElement skuField = waitAndFindElement(By.id("codigo"));
+            clearAndSendKeys(skuField, productData.get("sku"));
 
-        WebElement nameField = waitAndFindElement(By.id("nome"));
-        clearAndSendKeys(nameField, productData.get("description"));
+            WebElement nameField = waitAndFindElement(By.id("nome"));
+            clearAndSendKeys(nameField, productData.get("description"));
 
-        WebElement priceField = waitAndFindElement(By.id("preco"));
-        clearAndSendKeys(priceField, productData.get("salePrice"));
+            WebElement formatField = waitAndFindElement(By.id("formato"));
+            selectOptionByText(formatField, "Simples");
 
-        // Sessão Características
-        WebElement caracteristicasTab = waitAndFindElement(By.cssSelector("li[data-tab='div_caracteristicas']"));
-        scrollToElement(caracteristicasTab);
-        clickUsingJavaScript(caracteristicasTab);
+            WebElement typeField = waitAndFindElement(By.id("tipo"));
+            selectOptionByText(typeField, "Produto");
 
-        WebElement brandField = waitAndFindElement(By.id("marca"));
-        clearAndSendKeys(brandField, "Bela Lure");
+            WebElement salePriceField = waitAndFindElement(By.id("preco"));
+            clearAndSendKeys(salePriceField, productData.get("salePrice"));
 
-        // Descrição Curta
-        driver.switchTo().frame("descricaoCurta_ifr");
-        WebElement shortDescription = waitAndFindElement(By.id("tinymce"));
-        clearAndSendKeys(shortDescription, productData.get("description") + "\n\n" +
-                "Tamanho: " + productData.get("size") + "\n" +
-                "Banho: Antialérgico em " + productData.get("bath") + "\n" +
-                "Marca: Bela Lure\n" +
-                "Coleção: " + productData.get("collection") + "\n\n");
+            WebElement unitField = waitAndFindElement(By.id("unidade"));
+            selectOptionByText(unitField, "UN");
 
-        // Aplicando negrito
-        Actions actions = new Actions(driver);
-        String[] boldTexts = {
-                "Garantia:\n",
-                "Itens inclusos:\n",
-                "Compra Garantida:\n",
-                "Dicas para manter suas peças sempre lindas:\n"
-        };
-
-        String[] normalTexts = {
-                "Esse acessório possui 1 ano de Garantia quanto banho, você recebe essa garantia junto com o seu pedido.\n\n",
-                "- 1 " + getInclusos(productData.get("type")) + "\n- Embalagem para presente\n- Certificado de garantia\n\n",
-                "Receba seu pedido no conforto da sua casa. Nós garantimos a entrega, se ocorrer qualquer problema com a entrega nós devolvemos o seu dinheiro.\n\n",
-                "Evite uso em piscina, academia, contato com produtos químicos incluindo químicas para cabelo. Após o uso guardar as peças separadas uma das outras, evitando riscos e quebra de pedras.\n\nÓtima opção para presentear alguém especial! Acredite, você vai amar!!"
-        };
-
-        for (int i = 0; i < boldTexts.length; i++) {
-            actions.moveToElement(shortDescription).sendKeys(boldTexts[i]).keyDown(Keys.CONTROL).sendKeys("b").keyUp(Keys.CONTROL).sendKeys(normalTexts[i]).perform();
+            WebElement conditionField = waitAndFindElement(By.id("condicao"));
+            selectOptionByText(conditionField, "Novo");
+        } catch (Exception e) {
+            System.out.println("Erro ao preencher os detalhes básicos: " + e.getMessage());
+            e.printStackTrace();
         }
+    }
 
-        driver.switchTo().defaultContent();
+    private void fillCharacteristics() {
+        try {
+            WebElement brandField = waitAndFindElement(By.id("marca"));
+            clearAndSendKeys(brandField, "Bela Lure");
 
-        // Descrição Complementar
-        driver.switchTo().frame("descricaoComplementar_ifr");
-        WebElement longDescription = waitAndFindElement(By.id("tinymce"));
-        clearAndSendKeys(longDescription, productData.get("description"));
-        driver.switchTo().defaultContent();
+            WebElement productionField = waitAndFindElement(By.id("producao"));
+            clearAndSendKeys(productionField, "Própria");
 
-        // Campos Customizados
-        WebElement customFieldBrand = waitAndFindElement(By.id("custom-field-1688250"));
-        clearAndSendKeys(customFieldBrand, "Bela Lure");
+            WebElement freeShippingField = waitAndFindElement(By.id("freteGratis"));
+            selectOptionByText(freeShippingField, "Não");
 
-        WebElement customFieldModel = waitAndFindElement(By.id("custom-field-1688254"));
-        clearAndSendKeys(customFieldModel, productData.get("description"));
+            WebElement netWeightField = waitAndFindElement(By.id("pesoLiquido"));
+            clearAndSendKeys(netWeightField, "0,150");
+
+            WebElement grossWeightField = waitAndFindElement(By.id("pesoBruto"));
+            clearAndSendKeys(grossWeightField, "0,150");
+
+            WebElement widthField = waitAndFindElement(By.id("largura"));
+            clearAndSendKeys(widthField, "14,00");
+
+            WebElement heightField = waitAndFindElement(By.id("altura"));
+            clearAndSendKeys(heightField, "5,00");
+
+            WebElement depthField = waitAndFindElement(By.id("profundidade"));
+            clearAndSendKeys(depthField, "17,00");
+
+            WebElement volumesField = waitAndFindElement(By.id("volumes"));
+            clearAndSendKeys(volumesField, "0");
+
+            WebElement itemsPerBoxField = waitAndFindElement(By.id("itensPorCaixa"));
+            clearAndSendKeys(itemsPerBoxField, "0,00");
+
+            WebElement unitOfMeasurementField = waitAndFindElement(By.id("unidadeMedida"));
+            selectOptionByText(unitOfMeasurementField, "centímetros");
+        } catch (Exception e) {
+            System.out.println("Erro ao preencher as características: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void fillShortDescription(Map<String, String> productData) {
+        try {
+            driver.switchTo().frame("descricaoCurta_ifr");
+            WebElement shortDescription = waitAndFindElement(By.id("tinymce"));
+            String descriptionContent = productData.get("description") + "\n\n" +
+                    "Tamanho: " + productData.get("size") + "\n" +
+                    "Banho: Antialérgico em " + productData.get("bath") + "\n" +
+                    "Marca: Bela Lure\n" +
+                    "Coleção: " + productData.get("collection") + "\n\n" +
+                    "Garantia:\n" +
+                    "Esse acessório possui 1 ano de Garantia quanto banho, você recebe essa garantia junto com o seu pedido.\n\n" +
+                    "Itens inclusos:\n" +
+                    "- 1 " + getInclusos(productData.get("type")) + "\n- Embalagem para presente\n- Certificado de garantia\n\n" +
+                    "Compra Garantida:\n" +
+                    "Receba seu pedido no conforto da sua casa. Nós garantimos a entrega, se ocorrer qualquer problema com a entrega nós devolvemos o seu dinheiro.\n\n" +
+                    "Dicas para manter suas peças sempre lindas:\n" +
+                    "Evite uso em piscina, academia, contato com produtos químicos incluindo químicas para cabelo. Após o uso guardar as peças separadas uma das outras, evitando riscos e quebra de pedras.\n\n" +
+                    "Ótima opção para presentear alguém especial! Acredite, você vai amar!!";
+            clearAndSendKeys(shortDescription, descriptionContent);
+
+            Actions actions = new Actions(driver);
+            highlightText(actions, shortDescription, "Garantia:");
+            highlightText(actions, shortDescription, "Itens inclusos:");
+            highlightText(actions, shortDescription, "Compra Garantida:");
+            highlightText(actions, shortDescription, "Dicas para manter suas peças sempre lindas:");
+
+            driver.switchTo().defaultContent();
+        } catch (Exception e) {
+            System.out.println("Erro ao preencher a descrição curta: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void highlightText(Actions actions, WebElement element, String textToHighlight) {
+        actions.moveToElement(element).sendKeys(Keys.CONTROL, "f").sendKeys(textToHighlight).sendKeys(Keys.ENTER).keyDown(Keys.CONTROL).sendKeys("b").keyUp(Keys.CONTROL).perform();
+    }
+
+    private void fillComplementaryDescription(String description) {
+        try {
+            driver.switchTo().frame("descricaoComplementar_ifr");
+            WebElement longDescription = waitAndFindElement(By.id("tinymce"));
+            clearAndSendKeys(longDescription, description);
+            driver.switchTo().defaultContent();
+        } catch (Exception e) {
+            System.out.println("Erro ao preencher a descrição complementar: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void fillCategory(String category, Map<String, String> productData) {
+        try {
+            WebElement categoryField = waitAndFindElement(By.id("categoria"));
+            selectOptionByText(categoryField, category);
+
+            WebElement brandField = waitAndFindElement(By.id("custom-field-1688250"));
+            clearAndSendKeys(brandField, "Bela Lure");
+
+            WebElement materialField = waitAndFindElement(By.id("custom-field-1688251"));
+            clearAndSendKeys(materialField, productData.get("bath"));
+
+            WebElement brandNoBrandField = waitAndFindElement(By.id("custom-field-1688252"));
+            clearAndSendKeys(brandNoBrandField, "");
+
+            WebElement reasonField = waitAndFindElement(By.id("custom-field-1688253"));
+            clearAndSendKeys(reasonField, "O produto não tem código cadastrado");
+        } catch (Exception e) {
+            System.out.println("Erro ao preencher a categoria: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void uploadImage(String sku) {
         try {
-            // Acessa a aba de imagens
             WebElement imageTab = waitAndFindElement(By.cssSelector("li[data-tab='div_imagens']"));
             scrollToElement(imageTab);
-            wait.until(ExpectedConditions.elementToBeClickable(imageTab));
             clickUsingJavaScript(imageTab);
 
-            // Espera e clica para remover a imagem existente
             WebElement removeImage = waitAndFindElement(By.cssSelector("a[onclick='removerAnexoProduto()']"));
             scrollToElement(removeImage);
             clickUsingJavaScript(removeImage);
 
-            // Espera e desmarca a caixa de seleção "Excluir arquivo do sistema"
             WebElement removeFileCheckbox = waitAndFindElement(By.id("removerArquivo"));
             if (removeFileCheckbox.isSelected()) {
-                clickUsingJavaScript(removeFileCheckbox);
+                removeFileCheckbox.click();
             }
-
-            // Espera o campo de upload de imagem
             WebElement uploadField = waitAndFindElement(By.id("input_image_upload"));
-            uploadField.sendKeys("C:/temp/projetos java/bling-automation/fotos/" + sku + ".jpg");
-
+            uploadField.sendKeys("C:/temp/projetos java/bling-automation/fotos" + sku + ".jpg");
         } catch (Exception e) {
-            System.out.println("Erro ao carregar imagem: " + e.getMessage());
+            System.out.println("Erro no upload da imagem: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+    public void fillStockDetails(Map<String, String> productData) {
+        try {
+            WebElement stockTab = waitAndFindElement(By.cssSelector("li[data-tab='div_estoque']"));
+            scrollToElement(stockTab);
+            clickUsingJavaScript(stockTab);
 
-    private void fillStockDetails(Map<String, String> productData) {
-        WebElement stockTab = waitAndFindElement(By.cssSelector("li[data-tab='div_estoque']"));
-        scrollToElement(stockTab);
-        clickUsingJavaScript(stockTab);
+            WebElement quantityField = waitAndFindElement(By.id("estoqueSaldoQuantidade"));
+            clearAndSendKeys(quantityField, productData.get("stock"));
 
-        WebElement quantityField = waitAndFindElement(By.id("estoqueSaldoQuantidade"));
-        clearAndSendKeys(quantityField, productData.get("stock"));
+            WebElement unitCostField = waitAndFindElement(By.id("estoqueSaldoPreco"));
+            clearAndSendKeys(unitCostField, productData.get("costPrice"));
 
-        WebElement unitCostField = waitAndFindElement(By.id("estoqueSaldoPreco"));
-        clearAndSendKeys(unitCostField, productData.get("costPrice"));
-
-        WebElement totalCostField = waitAndFindElement(By.id("estoqueSaldoCusto"));
-        clearAndSendKeys(totalCostField, productData.get("costPrice"));
+            WebElement totalCostField = waitAndFindElement(By.id("estoqueSaldoCusto"));
+            clearAndSendKeys(totalCostField, productData.get("costPrice"));
+        } catch (Exception e) {
+            System.out.println("Erro ao preencher os detalhes de estoque: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    private void saveProduct() {
-        WebElement saveButton = waitAndFindElement(By.id("botaoSalvar"));
-        scrollToElement(saveButton);
-        clickUsingJavaScript(saveButton);
-        System.out.println("Produto salvo com sucesso.");
+    public void fillTaxDetails() {
+        try {
+            WebElement originField = waitAndFindElement(By.id("origem"));
+            selectOptionByText(originField, "0 - Nacional, exceto as indicadas nos códigos 3, 4, 5 e 8");
+
+            WebElement ncmField = waitAndFindElement(By.id("ncm"));
+            clearAndSendKeys(ncmField, "7117.19.00");
+
+            WebElement cestField = waitAndFindElement(By.id("cest"));
+            clearAndSendKeys(cestField, "28.058.00");
+
+            WebElement itemTypeField = waitAndFindElement(By.id("tipoItem"));
+            selectOptionByText(itemTypeField, "Mercadoria para Revenda");
+
+            WebElement tributesPercentageField = waitAndFindElement(By.id("percentualTributos"));
+            clearAndSendKeys(tributesPercentageField, "0");
+
+            WebElement icmsValueField = waitAndFindElement(By.id("valorIcms"));
+            clearAndSendKeys(icmsValueField, "0,0000");
+
+            WebElement ipiValueField = waitAndFindElement(By.id("valorIpi"));
+            clearAndSendKeys(ipiValueField, "0");
+
+            WebElement pisCofinsValueField = waitAndFindElement(By.id("valorPisCofins"));
+            clearAndSendKeys(pisCofinsValueField, "0,0000");
+        } catch (Exception e) {
+            System.out.println("Erro ao preencher os detalhes de tributação: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void saveProduct() {
+        try {
+            WebElement saveButton = waitAndFindElement(By.id("botaoSalvar"));
+            scrollToElement(saveButton);
+            clickUsingJavaScript(saveButton);
+            System.out.println("Produto salvo com sucesso.");
+        } catch (Exception e) {
+            System.out.println("Erro ao salvar o produto: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private String getInclusos(String type) {
@@ -187,7 +288,7 @@ public class BlingAutomation {
             case "Bracelete":
                 return "Bracelete";
             case "Brinco Gota":
-                return "Par de Brinco Gota";
+                return "Par de Brincos Gota";
             case "Anel":
                 return "Anel";
             default:
@@ -195,28 +296,29 @@ public class BlingAutomation {
         }
     }
 
-
-    private WebElement waitAndFindElement(By locator) {
-        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+    private void scrollToElement(WebElement element) {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].scrollIntoView(true);", element);
     }
 
     private void clearAndSendKeys(WebElement element, String text) {
-        wait.until(ExpectedConditions.elementToBeClickable(element));
+        wait.until(ExpectedConditions.visibilityOf(element));
         element.clear();
         element.sendKeys(text);
     }
 
+    private WebElement waitAndFindElement(By locator) {
+        return wait.until(ExpectedConditions.presenceOfElementLocated(locator));
+    }
 
     private void clickUsingJavaScript(WebElement element) {
         JavascriptExecutor js = (JavascriptExecutor) driver;
         js.executeScript("arguments[0].click();", element);
     }
 
-    private void scrollToElement(WebElement element) {
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        js.executeScript("arguments[0].scrollIntoView(true);", element);
+    private void selectOptionByText(WebElement element, String text) {
+        element.findElement(By.xpath("//option[text()='" + text + "']")).click();
     }
-
 
     public void close() {
         driver.quit();

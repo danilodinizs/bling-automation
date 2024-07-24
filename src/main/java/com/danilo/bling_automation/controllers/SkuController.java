@@ -32,7 +32,7 @@ public class SkuController {
 
         if (!productData.isEmpty()) {
             blingAutomation.createProduct(productData);
-            blingAutomation.close();
+            // blingAutomation.close();
         }
 
         ModelAndView modelAndView = new ModelAndView("result");
